@@ -1,8 +1,7 @@
 import csv
-import io
 import logging
+from pathlib import Path
 
-from loguru import logger
 from telegram import File, Update
 from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
 
@@ -18,21 +17,20 @@ logging.basicConfig(
 async def csv_decoder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message
     if str(message.from_user.id) in ALLOWED_USER_IDS:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, text="Processing File"
+        )
         csv_file: File = await message.effective_attachment.get_file()
-        logging.info(csv_file)
+        logging.debug(f"Attached File: {csv_file}")
 
-        # Read the file into memory
-        csv_buffer = io.BytesIO()
-        await csv_file.download_to_memory(csv_buffer)
-        csv_buffer.seek(0)
-
-        # Convert CSV bytes into a list of strings for each row
-        csv_text: str = csv_buffer.read().decode("utf-8")
-        csv_list: list = list(csv.reader(csv_text.splitlines()))
+        logging.info("Downloading file")
+        await csv_file.download_to_drive(f"/tmp/{csv_file.file_unique_id}")
+        with open(f"/tmp/{csv_file.file_unique_id}") as csv_file_object:
+            csv_list = list(csv.reader(csv_file_object))
 
         SqlConnections.upsert_transaction(conn, csv_list)
         await context.bot.send_message(
-            chat_id=update.effective_chat.id, text="Received"
+            chat_id=update.effective_chat.id, text="Transactions Processed"
         )
 
 
