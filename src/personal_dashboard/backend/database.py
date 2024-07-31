@@ -1,10 +1,13 @@
 import random
 import time
 
+import pandas as pd
 import psycopg
 from loguru import logger
 
 from src.personal_dashboard import config
+
+YONDER = "yonder_transactions"
 
 
 class SqlConnections:
@@ -43,7 +46,7 @@ class SqlConnections:
                     f"{transaction_time=}, {description=}, {amount_gbp=}, {amount_charged_ccy=}, {currency=}, {category=}, {debit_or_credit=}, {postcode=}"
                 )
                 cur.execute(
-                    "INSERT INTO yonder_transactions(transaction_time, description, amount_gbp, amount_ccy, currency, category, debit_or_credit, postcode) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (transaction_time) DO NOTHING",
+                    f"INSERT INTO {YONDER}(transaction_time, description, amount_gbp, amount_ccy, currency, category, debit_or_credit, postcode) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT (transaction_time) DO NOTHING",
                     (
                         transaction_time,
                         description,
@@ -57,3 +60,17 @@ class SqlConnections:
                 )
 
             conn.commit()
+
+    def get_all_transactions_as_table(conn: psycopg.Connection) -> pd.DataFrame:
+
+        with conn.cursor() as cur:
+            query = f"SELECT * FROM {YONDER}"
+            cur.execute(query)
+
+            rows = cur.fetchall()
+
+            colnames = [desc[0] for desc in cur.description]
+
+            df = pd.DataFrame(rows, columns=colnames)
+
+        return df
