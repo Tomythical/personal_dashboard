@@ -1644,6 +1644,21 @@ typing = ["typing-extensions"]
 xmp = ["defusedxml"]
 
 [[package]]
+name = "plotly"
+version = "5.23.0"
+description = "An open-source, interactive data visualization library for Python"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "plotly-5.23.0-py3-none-any.whl", hash = "sha256:76cbe78f75eddc10c56f5a4ee3e7ccaade7c0a57465546f02098c0caed6c2d1a"},
+    {file = "plotly-5.23.0.tar.gz", hash = "sha256:89e57d003a116303a34de6700862391367dd564222ab71f8531df70279fc0193"},
+]
+
+[package.dependencies]
+packaging = "*"
+tenacity = ">=6.2.0"
+
+[[package]]
 name = "protobuf"
 version = "5.27.3"
 description = ""
@@ -2876,4 +2891,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "5dbb82a78dbf9fea439eef507ea6a8ec68340b1450dc6fd054d3c22a9ee61c9b"
+content-hash = "063f8706fff71345d0dd5aff4a538c13bf66c0cfcec1a7187c082785da6d369c"
