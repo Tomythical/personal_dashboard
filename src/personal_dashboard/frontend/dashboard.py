@@ -1,7 +1,8 @@
-import matplotlib.pyplot as plt
+from datetime import datetime as dt
+from datetime import timedelta
+
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 
 from src.personal_dashboard.backend.database import SqlConnections
@@ -70,7 +71,51 @@ class PageComponents:
         )
 
     def last_week(self):
-        pass
+        last_week_df = self.finance_analyzer.get_last_week_df()
+        col1, col2, col3 = st.columns(3)
+
+        average_weekly_expense = self.finance_analyzer.get_average_expense("W")
+
+        last_week_expense = self.finance_analyzer.get_total_expense(last_week_df)
+        last_week_top_expense_amount, last_month_top_expense_description = (
+            self.finance_analyzer.get_top_expense_and_description(last_week_df)
+        )
+        percentage_diff_last_two_weeks = (
+            self.finance_analyzer.get_percentage_diff_between_last_two_weeks()
+        )
+        col1.metric(
+            label="Average Weekly Expense",
+            value=f"£{average_weekly_expense:,.2f}",
+        )
+        col2.metric(
+            label="Last Week Total Expense",
+            value=f"£{last_week_expense:,.2f}",
+            delta=f"{percentage_diff_last_two_weeks:,.2f}% from week before",
+            delta_color="inverse",
+        )
+        col3.metric(
+            label="Last Week Top Expense",
+            value=f"£{last_week_top_expense_amount:,.2f}",
+            delta=last_month_top_expense_description,
+            delta_color="off",
+        )
+        st.divider()
+        # # Display top expense categories in a table
+        col1, col2 = st.columns(2)
+        last_week_figures = Figures(last_week_df, self.finance_analyzer)
+
+        with col1:
+            st.markdown(
+                "<h4 style='text-align: left; color: white;'>Top Expenses by Category</h4>",
+                unsafe_allow_html=True,
+            )
+            last_week_figures.top_category_spending_table()
+        with col2:
+            st.markdown(
+                "<h4 style='text-align: left; color: white;'>Percentage of Expenses by Category</h4>",
+                unsafe_allow_html=True,
+            )
+            last_week_figures.category_spending_pie_chart()
 
     def last_month(self):
         last_month_df = self.finance_analyzer.get_last_month_df()
@@ -125,19 +170,29 @@ class PageComponents:
         pass
 
 
+def get_last_week_dates():
+    current_date = dt.now()
+    start_of_current_week = current_date - timedelta(days=current_date.weekday())
+    start_of_last_week = start_of_current_week - timedelta(weeks=1)
+    end_of_last_week = start_of_last_week + timedelta(days=6)
+    formatted_dates = f"{start_of_last_week.day:02}-{end_of_last_week.day:02}"
+    return formatted_dates
+
+
 def streamlit_app(df: pd.DataFrame, exclude_holiday=False):
     st.set_page_config(layout="wide")
     components = PageComponents(df, exclude_holiday)
     components.title()
-    tab1, tab2, tab3, tab4 = st.tabs(["Last Week", "Last Month", "Stats", "Budget"])
+
+    last_week = get_last_week_dates()
+    last_month = (pd.Period(dt.now(), "M") - 1).strftime("%B")
+    tab1, tab2, tab3, tab4 = st.tabs(
+        [f"Last Week: {last_week}", f"Last Month: {last_month}", "Stats", "Budget"]
+    )
     with tab1:
+        components.last_week()
+    with tab2:
         components.last_month()
-    # with st.container():
-    #     col1, col2 = st.columns(2)
-    #     with col1:
-    #         plot_category_wise_spending_analysis(df, exclude_holiday)
-    #     with col2:
-    #         plot_category_wise_spending_analysis(df, exclude_holiday)
 
 
 if __name__ == "__main__":

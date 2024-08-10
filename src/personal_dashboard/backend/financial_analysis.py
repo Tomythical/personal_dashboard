@@ -29,6 +29,16 @@ class FinancialAnalysis:
 
         return df_last_month
 
+    def get_last_week_df(self) -> pd.DataFrame:
+        current_date = pd.Timestamp("now")
+        last_monday = current_date - pd.to_timedelta(
+            current_date.weekday() + 7, unit="D"
+        )
+        last_sunday = last_monday + pd.Timedelta(days=6)
+        last_monday = last_monday.replace(hour=0, minute=0, second=0)
+        last_sunday = last_sunday.replace(hour=23, minute=59, second=59)
+        return self.df[(self.df.index >= last_monday) & (self.df.index <= last_sunday)]
+
     def get_two_months_before_df(self) -> pd.DataFrame:
         last_day_of_last_month = self.__get_last_day_of_last_month()
         first_day_of_last_month = last_day_of_last_month.replace(day=1)
@@ -41,6 +51,19 @@ class FinancialAnalysis:
         ]
 
         return df_month_before_last
+
+    def get_two_weeks_before_df(self) -> pd.DataFrame:
+        current_date = pd.Timestamp("now")
+        last_monday = current_date - pd.to_timedelta(
+            current_date.weekday() + 7, unit="D"
+        )
+        two_weeks_before_monday = last_monday - pd.Timedelta(days=7)
+        two_weeks_before_sunday = two_weeks_before_monday + pd.Timedelta(days=6)
+
+        return self.df[
+            (self.df.index >= two_weeks_before_monday)
+            & (self.df.index <= two_weeks_before_sunday)
+        ]
 
     def get_total_expense(self, df: pd.DataFrame):
         last_month_expense = df["amount_gbp"].sum()
@@ -74,6 +97,19 @@ class FinancialAnalysis:
 
         percentage_difference = (
             (last_month_expense - two_months_ago_expense) / two_months_ago_expense
+        ) * 100
+
+        return percentage_difference
+
+    def get_percentage_diff_between_last_two_weeks(self):
+        last_week_df = self.get_last_week_df()
+        two_weeks_ago_df = self.get_two_weeks_before_df()
+
+        last_week_expense = self.get_total_expense(last_week_df)
+        two_weeks_ago_expense = self.get_total_expense(two_weeks_ago_df)
+
+        percentage_difference = (
+            (last_week_expense - two_weeks_ago_expense) / two_weeks_ago_expense
         ) * 100
 
         return percentage_difference
