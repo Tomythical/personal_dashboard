@@ -2,8 +2,6 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from src.personal_dashboard.backend.financial_analysis import FinancialAnalysis
-
 
 class Figures:
 
@@ -48,12 +46,15 @@ class Figures:
 
     @staticmethod
     def category_spending_over_time_stacked_bar(df: pd.DataFrame):
+        st.markdown(
+            "<h4 style='text-align: left; color: white;'>Monthly Expenses over Time</h4>",
+            unsafe_allow_html=True,
+        )
         fig = px.bar(
             df,
             x="transaction_time",
             y=df.columns[1:],  # Exclude the 'transaction_time' column
             labels={"value": "Amount (GBP)", "transaction_time": "Month"},
-            title="Monthly Expenses by Category",
             color_discrete_sequence=px.colors.qualitative.Dark2,
         )
 

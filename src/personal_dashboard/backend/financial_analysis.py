@@ -3,7 +3,7 @@ from typing import Hashable
 import pandas as pd
 
 
-class FinancialAnalysis:
+class TransactionPeriod:
 
     def __init__(self, df: pd.DataFrame):
         self.df = df
@@ -30,17 +30,23 @@ class FinancialAnalysis:
     def get_month_df(self, year_month: str) -> pd.DataFrame:
         return self.df.loc[year_month]
 
-    def get_total_expense(self, df: pd.DataFrame):
+
+class SpendingAnalysis:
+
+    @staticmethod
+    def get_total_expense(df: pd.DataFrame):
         last_month_expense = df["amount_gbp"].sum()
         return last_month_expense
 
-    def get_top_expense_and_description(self, df: pd.DataFrame):
+    @staticmethod
+    def get_top_expense_and_description(df: pd.DataFrame):
         top_expense_row = df.loc[df["amount_gbp"].idxmax()]
         top_expense_amount = top_expense_row["amount_gbp"]
         top_expense_description = top_expense_row["description"]
         return top_expense_amount, top_expense_description
 
-    def get_top_expense_categories(self, df: pd.DataFrame) -> dict[Hashable, str]:
+    @staticmethod
+    def get_top_expense_categories(df: pd.DataFrame) -> dict[Hashable, str]:
         category_spending = df.groupby("category")["amount_gbp"].sum()
         top_categories = category_spending.sort_values(ascending=False)
         top_categories_expense_amount = {
@@ -49,16 +55,18 @@ class FinancialAnalysis:
         }
         return top_categories_expense_amount
 
-    def get_average_expense(self, period: str):
-        average_expenses = self.df.resample(period)["amount_gbp"].sum()[1:-1].mean()
+    @staticmethod
+    def get_average_expense(df: pd.DataFrame, period: str) -> float:
+        average_expenses = df.resample(period)["amount_gbp"].sum()[1:-1].mean()
         return average_expenses
 
+    @staticmethod
     def get_diff_between_periods(
-        self, recent_period: pd.DataFrame, older_period: pd.DataFrame
+        recent_period: pd.DataFrame, older_period: pd.DataFrame
     ) -> float:
 
-        recent_period_expense = self.get_total_expense(recent_period)
-        older_period_expense = self.get_total_expense(older_period)
+        recent_period_expense = SpendingAnalysis.get_total_expense(recent_period)
+        older_period_expense = SpendingAnalysis.get_total_expense(older_period)
 
         difference = recent_period_expense - older_period_expense
 

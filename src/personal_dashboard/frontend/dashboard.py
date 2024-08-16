@@ -7,7 +7,10 @@ import streamlit as st
 from dateutil.relativedelta import relativedelta
 
 from src.personal_dashboard.backend.database import SqlConnections
-from src.personal_dashboard.backend.financial_analysis import FinancialAnalysis
+from src.personal_dashboard.backend.financial_analysis import (
+    SpendingAnalysis,
+    TransactionPeriod,
+)
 from src.personal_dashboard.frontend.figures import Figures
 
 
@@ -19,7 +22,7 @@ class PageComponents:
         if self.exclude_holiday:
             self.df = self.df[self.df["category"] != "Holiday"]
 
-        self.finance_analyzer = FinancialAnalysis(self.df)
+        self.transaction_period = TransactionPeriod(self.df)
 
     def title(self):
         st.title("My Local AI Finance Insighter")
@@ -29,23 +32,25 @@ class PageComponents:
 
     def last_week(self):
         last_week = (dt.now() - relativedelta(weeks=1)).isocalendar()
-        last_week_df = self.finance_analyzer.get_week_df(last_week.year, last_week.week)
+        last_week_df = self.transaction_period.get_week_df(
+            last_week.year, last_week.week
+        )
 
         two_weeks_ago = (dt.now() - relativedelta(weeks=2)).isocalendar()
-        two_weeks_ago_df = self.finance_analyzer.get_week_df(
+        two_weeks_ago_df = self.transaction_period.get_week_df(
             two_weeks_ago.year, two_weeks_ago.week
         )
 
         # Stats
-        average_weekly_expense = self.finance_analyzer.get_average_expense("W")
-        last_week_expense = self.finance_analyzer.get_total_expense(last_week_df)
+        average_weekly_expense = SpendingAnalysis.get_average_expense(self.df, "W")
+        last_week_expense = SpendingAnalysis.get_total_expense(last_week_df)
         last_week_top_expense_amount, last_month_top_expense_description = (
-            self.finance_analyzer.get_top_expense_and_description(last_week_df)
+            SpendingAnalysis.get_top_expense_and_description(last_week_df)
         )
-        diff_last_two_weeks = self.finance_analyzer.get_diff_between_periods(
+        diff_last_two_weeks = SpendingAnalysis.get_diff_between_periods(
             last_week_df, two_weeks_ago_df
         )
-        top_expense_categories = self.finance_analyzer.get_top_expense_categories(
+        top_expense_categories = SpendingAnalysis.get_top_expense_categories(
             last_week_df
         ).items()
 
@@ -78,29 +83,30 @@ class PageComponents:
 
     def last_month(self):
         last_month = (dt.now() - relativedelta(months=1)).strftime("%Y-%m")
-        last_month_df = self.finance_analyzer.get_month_df(last_month)
+        last_month_df = self.transaction_period.get_month_df(last_month)
 
         two_months_ago = (dt.now() - relativedelta(months=2)).strftime("%Y-%m")
-        two_months_ago_df = self.finance_analyzer.get_month_df(two_months_ago)
+        two_months_ago_df = self.transaction_period.get_month_df(two_months_ago)
 
         # Stats
-        average_monthly_expense = self.finance_analyzer.get_average_expense("ME")
-        last_month_expense = self.finance_analyzer.get_total_expense(last_month_df)
+        average_monthly_expense = SpendingAnalysis.get_average_expense(self.df, "ME")
+
+        last_month_expense = SpendingAnalysis.get_total_expense(last_month_df)
         last_month_top_expense_amount, last_month_top_expense_description = (
-            self.finance_analyzer.get_top_expense_and_description(last_month_df)
+            SpendingAnalysis.get_top_expense_and_description(last_month_df)
         )
-        diff_last_two_months = self.finance_analyzer.get_diff_between_periods(
+        diff_last_two_months = SpendingAnalysis.get_diff_between_periods(
             last_month_df, two_months_ago_df
         )
         category_spending_each_month_df = (
-            self.finance_analyzer.get_monthly_category_spending_df()
+            self.transaction_period.get_monthly_category_spending_df()
         )
 
         category_spending_each_month_df.reset_index(inplace=True)
         category_spending_each_month_df["transaction_time"] = (
             category_spending_each_month_df["transaction_time"].dt.strftime("%Y-%m")
         )
-        top_expense_categories = self.finance_analyzer.get_top_expense_categories(
+        top_expense_categories = SpendingAnalysis.get_top_expense_categories(
             last_month_df
         ).items()
 
