@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Hashable
 
 import pandas as pd
@@ -34,7 +35,7 @@ class TransactionPeriod:
 class SpendingAnalysis:
 
     @staticmethod
-    def get_total_expense(df: pd.DataFrame):
+    def get_total_expense(df: pd.DataFrame) -> float:
         last_month_expense = df["amount_gbp"].sum()
         return last_month_expense
 
@@ -71,3 +72,13 @@ class SpendingAnalysis:
         difference = recent_period_expense - older_period_expense
 
         return difference
+
+
+@dataclass
+class Stats:
+    average_expense: float
+    total_expense: float
+    top_expense_amount: float
+    top_expense_description: str
+    diff_between_two_periods: float
+    top_expense_categories: dict[Hashable, str]
