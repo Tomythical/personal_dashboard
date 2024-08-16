@@ -1,8 +1,6 @@
-from typing import Hashable, Set
+from typing import Hashable
 
-import matplotlib.pyplot as plt
 import pandas as pd
-import streamlit as st
 
 
 class FinancialAnalysis:
@@ -13,57 +11,24 @@ class FinancialAnalysis:
         self.df["transaction_time"] = pd.to_datetime(self.df["transaction_time"])
         self.df.set_index("transaction_time", inplace=True)
 
-    def __get_last_day_of_last_month(self) -> pd.Timestamp:
-        current_date = pd.Timestamp("now")
-        first_day_of_current_month = current_date.replace(day=1)
-        last_day_of_last_month = first_day_of_current_month - pd.Timedelta(days=1)
-        return last_day_of_last_month
-
-    def get_last_month_df(self) -> pd.DataFrame:
-        last_day_of_last_month = self.__get_last_day_of_last_month()
-        first_day_of_last_month = last_day_of_last_month.replace(day=1)
-        df_last_month = self.df[
-            (self.df.index >= first_day_of_last_month)
-            & (self.df.index <= last_day_of_last_month)
-        ]
-
-        return df_last_month
-
-    def get_last_week_df(self) -> pd.DataFrame:
-        current_date = pd.Timestamp("now")
-        last_monday = current_date - pd.to_timedelta(
-            current_date.weekday() + 7, unit="D"
+    def get_monthly_category_spending_df(self) -> pd.DataFrame:
+        return (
+            self.df.groupby([pd.Grouper(freq="MS"), "category"])["amount_gbp"]
+            .sum()
+            .unstack(fill_value=0)
         )
-        last_sunday = last_monday + pd.Timedelta(days=6)
-        last_monday = last_monday.replace(hour=0, minute=0, second=0)
-        last_sunday = last_sunday.replace(hour=23, minute=59, second=59)
-        return self.df[(self.df.index >= last_monday) & (self.df.index <= last_sunday)]
 
-    def get_two_months_before_df(self) -> pd.DataFrame:
-        last_day_of_last_month = self.__get_last_day_of_last_month()
-        first_day_of_last_month = last_day_of_last_month.replace(day=1)
-        last_day_of_month_before_last = first_day_of_last_month - pd.Timedelta(days=1)
-        first_day_of_month_before_last = last_day_of_month_before_last.replace(day=1)
+    def get_week_df(self, year: int, week_number: int) -> pd.DataFrame:
+        self.df["year"] = self.df.index.isocalendar().year
+        self.df["week"] = self.df.index.isocalendar().week
 
-        df_month_before_last = self.df[
-            (self.df.index >= first_day_of_month_before_last)
-            & (self.df.index <= last_day_of_month_before_last)
+        specific_week_df = self.df[
+            (self.df["year"] == year) & (self.df["week"] == week_number)
         ]
+        return specific_week_df
 
-        return df_month_before_last
-
-    def get_two_weeks_before_df(self) -> pd.DataFrame:
-        current_date = pd.Timestamp("now")
-        last_monday = current_date - pd.to_timedelta(
-            current_date.weekday() + 7, unit="D"
-        )
-        two_weeks_before_monday = last_monday - pd.Timedelta(days=7)
-        two_weeks_before_sunday = two_weeks_before_monday + pd.Timedelta(days=6)
-
-        return self.df[
-            (self.df.index >= two_weeks_before_monday)
-            & (self.df.index <= two_weeks_before_sunday)
-        ]
+    def get_month_df(self, year_month: str) -> pd.DataFrame:
+        return self.df.loc[year_month]
 
     def get_total_expense(self, df: pd.DataFrame):
         last_month_expense = df["amount_gbp"].sum()
@@ -85,31 +50,16 @@ class FinancialAnalysis:
         return top_categories_expense_amount
 
     def get_average_expense(self, period: str):
-        average_expenses = self.df.resample(period)["amount_gbp"].sum().mean()
+        average_expenses = self.df.resample(period)["amount_gbp"].sum()[1:-1].mean()
         return average_expenses
 
-    def get_percentage_diff_between_last_two_months(self):
-        last_month_df = self.get_last_month_df()
-        two_months_ago_df = self.get_two_months_before_df()
+    def get_diff_between_periods(
+        self, recent_period: pd.DataFrame, older_period: pd.DataFrame
+    ) -> float:
 
-        last_month_expense = self.get_total_expense(last_month_df)
-        two_months_ago_expense = self.get_total_expense(two_months_ago_df)
+        recent_period_expense = self.get_total_expense(recent_period)
+        older_period_expense = self.get_total_expense(older_period)
 
-        percentage_difference = (
-            (last_month_expense - two_months_ago_expense) / two_months_ago_expense
-        ) * 100
+        difference = recent_period_expense - older_period_expense
 
-        return percentage_difference
-
-    def get_percentage_diff_between_last_two_weeks(self):
-        last_week_df = self.get_last_week_df()
-        two_weeks_ago_df = self.get_two_weeks_before_df()
-
-        last_week_expense = self.get_total_expense(last_week_df)
-        two_weeks_ago_expense = self.get_total_expense(two_weeks_ago_df)
-
-        percentage_difference = (
-            (last_week_expense - two_weeks_ago_expense) / two_weeks_ago_expense
-        ) * 100
-
-        return percentage_difference
+        return difference
