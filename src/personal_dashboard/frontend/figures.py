@@ -45,18 +45,30 @@ class Figures:
         st.table(expenses_df)
 
     @staticmethod
-    def category_spending_over_time_stacked_bar(df: pd.DataFrame):
+    def category_spending_over_time_stacked_bar(df: pd.DataFrame, month_or_week: str):
         st.markdown(
-            "<h4 style='text-align: left; color: white;'>Monthly Expenses over Time</h4>",
+            f"<h4 style='text-align: left; color: white;'>{month_or_week}ly Expenses over Time</h4>",
             unsafe_allow_html=True,
         )
+        df.reset_index(inplace=True)
+        if month_or_week == "Month":
+            format = "%B"
+        else:
+            format = "%m-%d"
+
+        df["transaction_time"] = df["transaction_time"].dt.strftime(format)
         fig = px.bar(
             df,
             x="transaction_time",
-            y=df.columns[1:],  # Exclude the 'transaction_time' column
-            labels={"value": "Amount (GBP)", "transaction_time": "Month"},
-            color_discrete_sequence=px.colors.qualitative.Dark2,
+            y=df.columns[
+                1:
+            ],  # Y-axis: category columns, excluding the 'transaction_time' column
+            labels={
+                "value": "Amount (GBP)",
+                "transaction_time": f"{month_or_week} Starting",
+            },
+            color_discrete_sequence=px.colors.qualitative.Set2,  # Optional: custom color palette
         )
-
         # Step 4: Display in Streamlit
+        fig.update_xaxes(type="category")
         st.plotly_chart(fig)

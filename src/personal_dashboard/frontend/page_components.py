@@ -20,7 +20,7 @@ class PageComponents:
         if self.exclude_holiday:
             self.df = self.df[self.df["category"] != "Holiday"]
 
-        self.transaction_period = TransactionPeriod(self.df)
+        self.transaction_period = TransactionPeriod(self.df.copy())
 
     def __get_stats(
         self, period: pd.DataFrame, older_period: pd.DataFrame, month_or_week: str
@@ -46,101 +46,81 @@ class PageComponents:
             top_expense_categories,
         )
 
-    def weekly_view(self):
-        week_iso = (dt.now() - relativedelta(weeks=1)).isocalendar()
-        week_df = self.transaction_period.get_week_df(week_iso.year, week_iso.week)
-
-        week_before_iso = (dt.now() - relativedelta(weeks=2)).isocalendar()
-        week_before_df = self.transaction_period.get_week_df(
-            week_before_iso.year, week_before_iso.week
-        )
-
-        # Stats
-        stats = self.__get_stats(week_df, week_before_df, "W")
-
-        # Components
+    def __metrics_row(self, stats: Stats, month_or_week: str):
         col1, col2, col3 = st.columns(3)
         col1.metric(
-            label="Average Weekly Expense",
+            label=f"Average {month_or_week}ly Expense",
             value=f"£{stats.average_expense:,.2f}",
         )
+
+        sign = "-" if stats.diff_between_two_periods < 0 else "+"
         col2.metric(
-            label="Last Week Total Expense",
+            label=f"Total Expense for {month_or_week}",
             value=f"£{stats.total_expense:,.2f}",
-            delta=f"£{stats.diff_between_two_periods:,.2f} from week before",
+            delta=f"{sign} £{abs(stats.diff_between_two_periods):,.2f} from {month_or_week.lower()} before",
             delta_color="inverse",
         )
+
         col3.metric(
-            label="Last Week Top Expense",
+            label=f"Top Expense for {month_or_week}",
             value=f"£{stats.top_expense_amount:,.2f}",
             delta=stats.top_expense_description,
             delta_color="off",
         )
         st.divider()
-        # # Display top expense categories in a table
-        col1, col2 = st.columns(2)
 
+    def __figures_row(
+        self,
+        stats: Stats,
+        period_df: pd.DataFrame,
+        category_spending_each_period_df: pd.DataFrame,
+        month_or_week: str,
+    ):
+        col1, col2 = st.columns(2)
         with col1:
             Figures.top_category_spending_table(stats.top_expense_categories)
         with col2:
-            Figures.category_spending_pie_chart(week_df)
+            Figures.category_spending_pie_chart(period_df)
 
-    def monthly_view(self):
-        last_month = (dt.now() - relativedelta(months=1)).strftime("%Y-%m")
-        last_month_df = self.transaction_period.get_month_df(last_month)
+        st.divider()
 
-        two_months_ago = (dt.now() - relativedelta(months=2)).strftime("%Y-%m")
-        two_months_ago_df = self.transaction_period.get_month_df(two_months_ago)
-
-        # Stats
-        average_monthly_expense = SpendingAnalysis.get_average_expense(self.df, "ME")
-
-        last_month_expense = SpendingAnalysis.get_total_expense(last_month_df)
-        last_month_top_expense_amount, last_month_top_expense_description = (
-            SpendingAnalysis.get_top_expense_and_description(last_month_df)
+        Figures.category_spending_over_time_stacked_bar(
+            category_spending_each_period_df, month_or_week
         )
-        diff_last_two_months = SpendingAnalysis.get_diff_between_periods(
-            last_month_df, two_months_ago_df
+
+    def weekly_view(self, chosen_datetime: dt):
+        chosen_iso = chosen_datetime.isocalendar()
+        week_df = self.transaction_period.get_week_df(chosen_iso.year, chosen_iso.week)
+
+        week_before_iso = chosen_datetime - relativedelta(weeks=1)
+        week_before_df = self.transaction_period.get_week_df(
+            week_before_iso.year, week_before_iso.week
         )
+
+        category_spending_each_week_df = (
+            self.transaction_period.get_periodic_category_spending_df("W-MON")
+        )
+
+        stats = self.__get_stats(week_df, week_before_df, "W")
+        self.__metrics_row(stats, "Week")
+        self.__figures_row(stats, week_df, category_spending_each_week_df, "Week")
+
+    def monthly_view(self, chosen_datetime: dt):
+        year_month_str = chosen_datetime.strftime("%Y-%m")
+        month_df = self.transaction_period.get_month_df(year_month_str)
+
+        try:
+            month_before_str = (chosen_datetime - relativedelta(months=1)).strftime(
+                "%Y-%m"
+            )
+            month_before_df = self.transaction_period.get_month_df(month_before_str)
+        except KeyError:
+            month_before_df = month_df
+
         category_spending_each_month_df = (
-            self.transaction_period.get_monthly_category_spending_df()
+            self.transaction_period.get_periodic_category_spending_df("MS")
         )
 
-        category_spending_each_month_df.reset_index(inplace=True)
-        category_spending_each_month_df["transaction_time"] = (
-            category_spending_each_month_df["transaction_time"].dt.strftime("%Y-%m")
-        )
-        top_expense_categories = SpendingAnalysis.get_top_expense_categories(
-            last_month_df
-        ).items()
-
-        # Components
-        col1, col2, col3 = st.columns(3)
-        col1.metric(
-            label="Average Monthly Expense",
-            value=f"£{average_monthly_expense:,.2f}",
-        )
-        col2.metric(
-            label="Last Month Total Expense",
-            value=f"£{last_month_expense:,.2f}",
-            delta=f"£{diff_last_two_months:,.2f} from month before",
-            delta_color="inverse",
-        )
-        col3.metric(
-            label="Last Month Top Expense",
-            value=f"£{last_month_top_expense_amount:,.2f}",
-            delta=last_month_top_expense_description,
-            delta_color="off",
-        )
-        st.divider()
-        # # Display top expense categories in a table
-        col1, col2 = st.columns(2)
-
-        with col1:
-            Figures.top_category_spending_table(top_expense_categories)
-        with col2:
-            Figures.category_spending_pie_chart(last_month_df)
-
-        st.divider()
-
-        Figures.category_spending_over_time_stacked_bar(category_spending_each_month_df)
+        stats = self.__get_stats(month_df, month_before_df, "ME")
+        self.__metrics_row(stats, "Month")
+        self.__figures_row(stats, month_df, category_spending_each_month_df, "Month")

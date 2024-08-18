@@ -9,19 +9,16 @@ class TransactionPeriod:
     def __init__(self, df: pd.DataFrame):
         self.df = df
 
-        self.df["transaction_time"] = pd.to_datetime(self.df["transaction_time"])
-        self.df.set_index("transaction_time", inplace=True)
-
-    def get_monthly_category_spending_df(self) -> pd.DataFrame:
+    def get_periodic_category_spending_df(self, frequency: str) -> pd.DataFrame:
         return (
-            self.df.groupby([pd.Grouper(freq="MS"), "category"])["amount_gbp"]
+            self.df.groupby([pd.Grouper(freq=frequency), "category"])["amount_gbp"]
             .sum()
             .unstack(fill_value=0)
         )
 
     def get_week_df(self, year: int, week_number: int) -> pd.DataFrame:
-        self.df["year"] = self.df.index.isocalendar().year
-        self.df["week"] = self.df.index.isocalendar().week
+        self.df.loc[:, "year"] = self.df.index.isocalendar().year
+        self.df.loc[:, "week"] = self.df.index.isocalendar().week
 
         specific_week_df = self.df[
             (self.df["year"] == year) & (self.df["week"] == week_number)
