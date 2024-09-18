@@ -1,6 +1,6 @@
-import random
-import time
+import os
 
+import httpx
 import pandas as pd
 import psycopg
 from loguru import logger
@@ -18,12 +18,41 @@ class SqlConnections:
         """
 
         try:
+            SqlConnections.download_ca_cert()
             conn = psycopg.connect(config.DATABASE_URL_PSYCOPG)
             return conn
         except Exception as e:
             logger.error("database connection failed")
             logger.error(e)
             return
+
+    def download_ca_cert():
+        dest_dir = os.path.join(os.getenv("HOME"), ".postgresql")
+        dest_file = os.path.join(dest_dir, "root.crt")
+
+        # Create directories if they don't exist
+        os.makedirs(dest_dir, exist_ok=True)
+
+        # Check if the file already exists
+        if os.path.exists(dest_file):
+            logger.debug(f"File already exists at {dest_file}")
+        else:
+            # Download the file
+            try:
+                with httpx.stream("GET", config.DATABASE_CA_CERT_URL) as response:
+                    response.raise_for_status()  # Check if the request was successful
+
+                    # Write the file to the destination
+                    with open(dest_file, "wb") as file:
+                        for chunk in response.iter_bytes():
+                            file.write(chunk)
+
+                logger.debug(f"File downloaded and saved to {dest_file}")
+
+            except httpx.HTTPStatusError as exc:
+                raise exc(f"Failed to download file: {exc.response.status_code}")
+            except Exception as e:
+                raise e()
 
     def sql_disconnect(conn: psycopg.Connection):
         logger.info(f"Closing connection to SQL database.")
