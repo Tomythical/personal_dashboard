@@ -16,6 +16,7 @@ langchain-community = "^0.2.10"
 streamlit = "^1.37.0"
 matplotlib = "^3.9.1"
 plotly = "^5.23.0"
+functions-framework = "^3.8.1"
 
 
 [build-system]

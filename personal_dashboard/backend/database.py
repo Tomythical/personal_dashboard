@@ -5,7 +5,7 @@ import pandas as pd
 import psycopg
 from loguru import logger
 
-from src.personal_dashboard import config
+from personal_dashboard import config
 
 YONDER = "yonder_transactions"
 

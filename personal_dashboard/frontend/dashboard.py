@@ -3,9 +3,9 @@ from datetime import datetime as dt
 import pandas as pd
 import streamlit as st
 
-from src.personal_dashboard.backend.database import SqlConnections
-from src.personal_dashboard.backend.utils import extract_first_date, get_day_suffix
-from src.personal_dashboard.frontend.page_components import PageComponents
+from personal_dashboard.backend.database import SqlConnections
+from personal_dashboard.backend.utils import extract_first_date, get_day_suffix
+from personal_dashboard.frontend.page_components import PageComponents
 
 
 def spending_period_filter(df: pd.DataFrame):

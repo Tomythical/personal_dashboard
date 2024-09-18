@@ -4,12 +4,12 @@ import pandas as pd
 import streamlit as st
 from dateutil.relativedelta import relativedelta
 
-from src.personal_dashboard.backend.financial_analysis import (
+from personal_dashboard.backend.financial_analysis import (
     SpendingAnalysis,
     Stats,
     TransactionPeriod,
 )
-from src.personal_dashboard.frontend.figures import Figures
+from personal_dashboard.frontend.figures import Figures
 
 
 class PageComponents:
