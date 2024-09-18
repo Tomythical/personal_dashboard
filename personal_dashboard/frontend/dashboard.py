@@ -3,6 +3,7 @@ from datetime import datetime as dt
 import pandas as pd
 import streamlit as st
 
+from personal_dashboard.backend.authentication import authenticate
 from personal_dashboard.backend.database import SqlConnections
 from personal_dashboard.backend.utils import extract_first_date, get_day_suffix
 from personal_dashboard.frontend.page_components import PageComponents
@@ -53,18 +54,19 @@ def spending_period_filter(df: pd.DataFrame):
 
 
 def streamlit_app(df: pd.DataFrame, exclude_holiday=False):
-    components = PageComponents(df, exclude_holiday)
-    tab1, tab2 = st.tabs([f"Spending Analysis", "Stats"])
-    with tab1:
-        year, month, week = spending_period_filter(df)
-        beginning_date_from_week = extract_first_date(week)
-        chosen_datetime = pd.to_datetime(
-            f"{year}-{month}-{beginning_date_from_week}", format="mixed"
-        )
-        if week is not None:
-            components.weekly_view(chosen_datetime)
-        else:
-            components.monthly_view(chosen_datetime)
+    if authenticate():
+        components = PageComponents(df, exclude_holiday)
+        tab1, tab2 = st.tabs([f"Spending Analysis", "Stats"])
+        with tab1:
+            year, month, week = spending_period_filter(df)
+            beginning_date_from_week = extract_first_date(week)
+            chosen_datetime = pd.to_datetime(
+                f"{year}-{month}-{beginning_date_from_week}", format="mixed"
+            )
+            if week is not None:
+                components.weekly_view(chosen_datetime)
+            else:
+                components.monthly_view(chosen_datetime)
 
 
 @st.cache_data(ttl="1d")
