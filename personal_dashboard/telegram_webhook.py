@@ -1,11 +1,14 @@
 import csv
+import os
 
 import functions_framework
 import httpx
+from dotenv import load_dotenv
 from loguru import logger
 
 from .backend.database import SqlConnections
-from .config import ALLOWED_USER_IDS, TELEGRAM_BOT_TOKEN
+
+load_dotenv()
 
 # TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_API_URL = f"https://api.telegram.org"
@@ -29,7 +32,7 @@ def telegram_webhook(request):
     last_name = update["message"]["from"]["last_name"]
     chat_id = update["message"]["chat"]["id"]
 
-    if str(user_id) != ALLOWED_USER_IDS:
+    if str(user_id) != os.getenv("ALLOWED_USER_IDS"):
         logger.error(f"Unapproved user: {first_name} {last_name}. Update: {update}")
         return f"Unapproved user: {first_name} {last_name}", 403
 
@@ -72,7 +75,7 @@ def telegram_webhook(request):
 
 def get_file_path(file_id):
     """Get the file path for the given file_id."""
-    url = f"{TELEGRAM_API_URL}/bot{TELEGRAM_BOT_TOKEN}/getFile?file_id={file_id}"
+    url = f"{TELEGRAM_API_URL}/bot{os.getenv("TELEGRAM_BOT_TOKEN")}/getFile?file_id={file_id}"
     logger.debug(f"Getting file id from url: {url}")
     try:
         response = httpx.get(url)
@@ -107,7 +110,7 @@ def download_file(url, file_name):
 def send_msg(chat_id, text):
     try:
         response = httpx.get(
-            f"{TELEGRAM_API_URL}/bot{TELEGRAM_BOT_TOKEN}/sendMessage?chat_id={chat_id}&text={text}"
+            f"{TELEGRAM_API_URL}/bot{os.getenv("TELEGRAM_BOT_TOKEN")}/sendMessage?chat_id={chat_id}&text={text}"
         )
         response.raise_for_status()
     except httpx.HTTPError as exc:
