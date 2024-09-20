@@ -27,4 +27,6 @@ COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 COPY  personal_dashboard/ ./personal_dashboard
 
+RUN ls 
+
 ENTRYPOINT ["python", "-m", "streamlit", "run", "/app/personal_dashboard/frontend/dashboard.py", "--server.port=8080", "--server.address=0.0.0.0"]
