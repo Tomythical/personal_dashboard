@@ -60,7 +60,7 @@ def telegram_webhook(request):
     try:
         file_path = get_file_path(file_id)
 
-        csv_url = f"{TELEGRAM_API_URL}/file/bot{TELEGRAM_BOT_TOKEN}/{file_path}"
+        csv_url = f"{TELEGRAM_API_URL}/file/bot{os.getenv("TELEGRAM_BOT_TOKEN")}/{file_path}"
 
         file_name = document["file_name"]
         download_file(csv_url, file_name)
