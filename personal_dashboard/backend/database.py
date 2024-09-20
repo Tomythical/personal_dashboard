@@ -5,7 +5,7 @@ import pandas as pd
 import psycopg
 from loguru import logger
 
-from personal_dashboard import config
+from personal_dashboard.config import DATABASE_CA_CERT_URL, DATABASE_URL_PSYCOPG
 
 YONDER = "yonder_transactions"
 
@@ -19,7 +19,7 @@ class SqlConnections:
 
         try:
             SqlConnections.download_ca_cert()
-            conn = psycopg.connect(config.DATABASE_URL_PSYCOPG)
+            conn = psycopg.connect(DATABASE_URL_PSYCOPG)
             return conn
         except Exception as e:
             logger.error("database connection failed")
@@ -39,7 +39,7 @@ class SqlConnections:
         else:
             # Download the file
             try:
-                with httpx.stream("GET", config.DATABASE_CA_CERT_URL) as response:
+                with httpx.stream("GET", DATABASE_CA_CERT_URL) as response:
                     response.raise_for_status()  # Check if the request was successful
 
                     # Write the file to the destination
