@@ -5,7 +5,7 @@ from yaml.loader import SafeLoader
 
 
 def authenticate():
-    with open("personal_dashboard/passwords.yaml") as file:
+    with open("/secrets/passwords.yaml") as file:
         config = yaml.load(file, Loader=SafeLoader)
 
     # Pre-hashing all plain text passwords once
